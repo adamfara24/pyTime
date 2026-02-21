@@ -1,0 +1,94 @@
+---
+  Sprint 1 — Project Setup & AWS Foundation
+
+  We're building a Python text-based CLI tool for uploading/downloading files and directories to AWS S3. The project is called pyTime.
+
+  For this sprint, implement the following:
+
+  1. Project structure — set up a clean Python project with a virtual environment, requirements.txt, and logical module layout (e.g. main.py, config.py, storage/, ui/)
+  2. AWS setup guidance — include a README or setup instructions for creating an AWS account, creating an IAM user with S3-only permissions, and generating access keys
+  3. Credential configuration — on first run, prompt the user to enter their AWS access key, secret key, and preferred region; save these to a local config file (e.g. ~/.pytime/config.json)
+  4. Username prompt — on every launch, prompt for a username which will be used as the S3 key namespace prefix (e.g. alice/my-folder/file.txt)
+  5. S3 connection — verify credentials work and list or create the target S3 bucket on startup
+  6. Main menu shell — a simple interactive text menu with placeholder options: Upload, Download, Browse, Share, Exit
+
+  ---
+  Sprint 2 — Single File Upload
+
+  We're continuing to build pyTime, a Python text-based CLI tool for AWS S3 file management.
+
+  For this sprint, implement the following:
+
+  1. File upload flow — from the main menu, the user selects Upload, then is prompted to enter a local file path
+  2. Validation — confirm the file exists before attempting upload; show a clear error if not
+  3. S3 key construction — upload the file under the user's namespace prefix (e.g. alice/filename.txt)
+  4. Progress feedback — show upload progress in the terminal (using boto3's transfer callbacks or rich progress bar)
+  5. Success/failure messaging — clearly confirm the upload succeeded or display a meaningful error
+
+  ---
+  Sprint 3 — Directory Upload
+
+  We're continuing to build pyTime, a Python text-based CLI tool for AWS S3 file management.
+
+  For this sprint, implement the following:
+
+  1. Directory upload flow — extend the Upload menu option to let the user choose between uploading a single file or an entire directory
+  2. Recursive walk — use os.walk to traverse the directory and collect all files
+  3. Preserve structure — maintain the folder hierarchy as S3 key prefixes under the user's namespace (e.g. alice/my-folder/subfolder/file.txt)
+  4. Batch progress — show overall progress across all files (e.g. "Uploading file 3 of 12")
+  5. Summary on completion — display how many files were uploaded successfully and flag any failures
+
+  ---
+  Sprint 4 — Browse & View
+
+  We're continuing to build pyTime, a Python text-based CLI tool for AWS S3 file management.
+
+  For this sprint, implement the following:
+
+  1. Browse flow — from the main menu, the user selects Browse to view their S3 content
+  2. List S3 contents — use the boto3 S3 list_objects_v2 API to list files under the user's namespace prefix
+  3. Tree display — render the files and "folders" (key prefixes) as a visual tree structure in the terminal using rich
+  4. Metadata — show file size and last modified date next to each file
+  5. Navigation — allow the user to drill into a subfolder or return to the main menu
+
+  ---
+  Sprint 5 — Download
+
+  We're continuing to build pyTime, a Python text-based CLI tool for AWS S3 file management.
+
+  For this sprint, implement the following:
+
+  1. Download flow — from the main menu, the user selects Download, then chooses a file or folder from their S3 namespace (reuse the Browse view from Sprint 4 if possible)
+  2. Single file download — download the selected file to a local path specified by the user
+  3. Directory download — if the user selects a folder prefix, recursively download all files within it and reconstruct the local directory structure
+  4. Progress feedback — show download progress similar to upload (Sprint 2/3)
+  5. Success/failure messaging — confirm download location or display meaningful errors
+
+  ---
+  Sprint 6 — Sharing via Access Code (Phase 2)
+
+  We're continuing to build pyTime, a Python text-based CLI tool for AWS S3 file management.
+
+  For this sprint, implement the following:
+
+  1. CodeProvider abstract base class — define an ABC in sharing/code_provider.py with the following abstract methods: generate_code(path: str) -> str, resolve_code(code: str) -> str | None, revoke_code(code: str) -> None
+  2. S3CodeProvider concrete implementation — implement CodeProvider using a JSON file stored in S3 (e.g. _system/codes.json) that maps short unique codes to S3 path prefixes
+  3. Share flow — from the main menu, the user selects Share, browses to a folder in their namespace, and generates a short access code that is displayed to them
+  4. Redeem flow — a user can enter an access code at launch or from the menu; if valid, they get read-only access to browse and download the shared directory
+  5. Wiring — the app should depend on the CodeProvider interface, with S3CodeProvider injected as the default, making it easy to swap in a different provider later
+
+  ---
+  Sprint 7 — Polish & Hardening
+
+  We're continuing to build pyTime, a Python text-based CLI tool for AWS S3 file management.
+
+  For this sprint, implement the following:
+
+  1. Consistent error handling — audit all S3 operations and user input flows for unhandled exceptions; surface friendly messages rather than raw stack traces
+  2. Config validation — on startup, validate that saved credentials and bucket config are still present and well-formed; prompt to reconfigure if not
+  3. Code expiration — add an optional expiry timestamp to shared access codes in S3CodeProvider; reject expired codes gracefully
+  4. Code revocation — allow the code owner to revoke a previously generated code from the Share menu
+  5. UX consistency pass — ensure all menus, prompts, and outputs follow a consistent style using rich; add a help/usage hint wherever appropriate
+
+  ---
+  Ready to go whenever you drop Sprint 1.
