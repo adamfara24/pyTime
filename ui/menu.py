@@ -4,6 +4,7 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from storage.s3_client import S3Client
+from ui.upload import upload_file_flow
 
 console = Console()
 
@@ -22,7 +23,7 @@ def show_main_menu(client: S3Client, username: str) -> None:
         choice = Prompt.ask("Select an option", choices=list(MENU_OPTIONS.keys()))
 
         if choice == "1":
-            console.print("[dim]Upload — coming in Sprint 2[/dim]\n")
+            upload_file_flow(client, username)
         elif choice == "2":
             console.print("[dim]Download — coming in Sprint 5[/dim]\n")
         elif choice == "3":

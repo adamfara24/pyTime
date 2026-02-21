@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Callable, Optional
+
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
 from rich.console import Console
@@ -54,3 +57,16 @@ class S3Client:
             else:
                 console.print(f"[red]Error accessing bucket: {e}[/red]")
                 raise
+
+    def upload_file(
+        self,
+        local_path: Path,
+        s3_key: str,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> None:
+        self.client.upload_file(
+            str(local_path),
+            self.bucket,
+            s3_key,
+            Callback=callback,
+        )
