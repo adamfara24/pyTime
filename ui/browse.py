@@ -8,6 +8,7 @@ from rich.prompt import Prompt
 from rich.table import Table
 
 from storage.s3_client import S3Client
+from ui.download import download_single_file
 
 console = Console()
 
@@ -63,7 +64,7 @@ def browse_flow(client: S3Client, username: str) -> None:
                 history.append(prefix)
                 prefix = item
             else:
-                console.print(f"\n[dim]File download available in Sprint 5.[/dim]\n")
+                download_single_file(client, item)
 
 
 def _render_listing(

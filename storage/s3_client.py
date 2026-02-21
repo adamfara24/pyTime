@@ -78,6 +78,29 @@ class S3Client:
 
         return folders, files
 
+    def list_all_objects(self, prefix: str) -> list[dict]:
+        """List every object recursively under a prefix (no delimiter)."""
+        paginator = self.client.get_paginator("list_objects_v2")
+        objects: list[dict] = []
+
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix):
+            objects.extend(
+                {"key": obj["Key"], "size": obj["Size"]}
+                for obj in page.get("Contents", [])
+                if obj["Key"] != prefix
+            )
+
+        return objects
+
+    def download_file(
+        self,
+        s3_key: str,
+        local_path: Path,
+        callback: Optional[Callable[[int], None]] = None,
+    ) -> None:
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        self.client.download_file(self.bucket, s3_key, str(local_path), Callback=callback)
+
     def upload_file(
         self,
         local_path: Path,
