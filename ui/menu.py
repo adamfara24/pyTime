@@ -3,9 +3,11 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
 
+from sharing.code_provider import CodeProvider
 from storage.s3_client import S3Client
 from ui.browse import browse_flow
 from ui.download import download_flow
+from ui.share import share_flow
 from ui.upload import upload_flow
 
 console = Console()
@@ -19,7 +21,7 @@ MENU_OPTIONS = {
 }
 
 
-def show_main_menu(client: S3Client, username: str) -> None:
+def show_main_menu(client: S3Client, username: str, code_provider: CodeProvider) -> None:
     while True:
         _render_menu(username)
         choice = Prompt.ask("Select an option", choices=list(MENU_OPTIONS.keys()))
@@ -31,7 +33,7 @@ def show_main_menu(client: S3Client, username: str) -> None:
         elif choice == "3":
             browse_flow(client, username)
         elif choice == "4":
-            console.print("[dim]Share — coming in Sprint 6[/dim]\n")
+            share_flow(client, username, code_provider)
         elif choice == "5":
             console.print("\n[cyan]Goodbye![/cyan]\n")
             break

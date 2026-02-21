@@ -5,6 +5,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 from config import load_config, run_setup_wizard, save_config
+from sharing.s3_code_provider import S3CodeProvider
 from storage.s3_client import S3Client
 from ui.menu import show_main_menu
 from ui.prompts import prompt_username
@@ -61,7 +62,8 @@ def main() -> None:
     )
 
     # Hand off to main menu
-    show_main_menu(client, username)
+    code_provider = S3CodeProvider(client)
+    show_main_menu(client, username, code_provider)
 
 
 if __name__ == "__main__":
