@@ -58,6 +58,26 @@ class S3Client:
                 console.print(f"[red]Error accessing bucket: {e}[/red]")
                 raise
 
+    def list_folder(self, prefix: str) -> tuple[list[str], list[dict]]:
+        """Return (subfolder_prefixes, files) at the given S3 prefix level."""
+        paginator = self.client.get_paginator("list_objects_v2")
+        folders: list[str] = []
+        files: list[dict] = []
+
+        for page in paginator.paginate(Bucket=self.bucket, Prefix=prefix, Delimiter="/"):
+            folders.extend(cp["Prefix"] for cp in page.get("CommonPrefixes", []))
+            files.extend(
+                {
+                    "key": obj["Key"],
+                    "size": obj["Size"],
+                    "last_modified": obj["LastModified"],
+                }
+                for obj in page.get("Contents", [])
+                if obj["Key"] != prefix  # exclude folder placeholder keys
+            )
+
+        return folders, files
+
     def upload_file(
         self,
         local_path: Path,
