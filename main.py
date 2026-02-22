@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from config import load_config, run_setup_wizard, save_config
+from config import load_config, run_setup_wizard, save_config, validate_config
 from sharing.s3_code_provider import S3CodeProvider
 from storage.s3_client import S3Client
 from ui.menu import show_main_menu
@@ -22,7 +22,7 @@ def main() -> None:
         )
     )
 
-    # Load config — run setup wizard on first launch
+    # Load config — run setup wizard on first launch or if config is invalid
     config = load_config()
     if config is None:
         console.print(
@@ -31,6 +31,13 @@ def main() -> None:
         config = run_setup_wizard()
         save_config(config)
         console.print("\n[green]Configuration saved to ~/.pytime/config.json[/green]\n")
+    elif not validate_config(config):
+        console.print(
+            "[yellow]Saved configuration is incomplete or corrupted. Re-running setup...[/yellow]\n"
+        )
+        config = run_setup_wizard()
+        save_config(config)
+        console.print("\n[green]Configuration updated.[/green]\n")
 
     # Prompt for username every launch
     username = prompt_username()

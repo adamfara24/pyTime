@@ -1,7 +1,7 @@
 import json
 import random
 import string
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from botocore.exceptions import ClientError
 
@@ -36,16 +36,26 @@ class S3CodeProvider(CodeProvider):
     # CodeProvider interface
     # ------------------------------------------------------------------
 
-    def generate_code(self, path: str) -> str:
+    def generate_code(self, path: str, expires_hours: int | None = None) -> str:
         codes = self._read_codes()
         code = _unique_code(codes)
-        codes[code] = {"path": path, "created_at": datetime.now(timezone.utc).isoformat()}
+        entry: dict = {"path": path, "created_at": datetime.now(timezone.utc).isoformat()}
+        if expires_hours is not None:
+            expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_hours)
+            entry["expires_at"] = expires_at.isoformat()
+        codes[code] = entry
         self._write_codes(codes)
         return code
 
     def resolve_code(self, code: str) -> str | None:
         entry = self._read_codes().get(code.upper())
-        return entry["path"] if entry else None
+        if entry is None:
+            return None
+        if "expires_at" in entry:
+            expires_at = datetime.fromisoformat(entry["expires_at"])
+            if datetime.now(timezone.utc) > expires_at:
+                return None  # expired
+        return entry["path"]
 
     def revoke_code(self, code: str) -> None:
         codes = self._read_codes()

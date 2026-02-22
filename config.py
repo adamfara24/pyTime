@@ -6,6 +6,8 @@ from rich.prompt import Prompt
 CONFIG_DIR = Path.home() / ".pytime"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
+_REQUIRED_KEYS = {"aws_access_key", "aws_secret_key", "aws_region", "bucket_name"}
+
 console = Console()
 
 
@@ -17,6 +19,13 @@ def load_config() -> dict | None:
             return json.load(f)
     except (json.JSONDecodeError, KeyError):
         return None
+
+
+def validate_config(config: dict) -> bool:
+    """Return True if config has all required keys with non-empty values."""
+    if not isinstance(config, dict):
+        return False
+    return all(str(config.get(key, "")).strip() for key in _REQUIRED_KEYS)
 
 
 def save_config(config: dict) -> None:

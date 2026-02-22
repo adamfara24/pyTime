@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -195,7 +196,8 @@ def test_share_flow_generate_shows_code(mock_s3_client, capsys):
         return_value=(["alice/docs/"], [])
     )
 
-    with patch("ui.share.Prompt.ask", side_effect=["generate", "1"]):
+    # "generate" → action, "1" → folder choice, "" → no expiry
+    with patch("ui.share.Prompt.ask", side_effect=["generate", "1", ""]):
         share_flow(mock_s3_client, "alice", mock_provider)
 
     assert "ABC123" in capsys.readouterr().out
@@ -237,3 +239,88 @@ def test_share_flow_generate_no_folders_shows_hint(mock_s3_client, capsys):
         share_flow(mock_s3_client, "alice", mock_provider)
 
     assert "no folders" in capsys.readouterr().out.lower()
+
+
+# ---------------------------------------------------------------------------
+# Code expiration
+# ---------------------------------------------------------------------------
+
+def test_generate_code_stores_expires_at_when_hours_given(provider, mock_s3_client):
+    mock_s3_client.client.get_object.side_effect = _client_error("NoSuchKey")
+
+    provider.generate_code("alice/docs/", expires_hours=24)
+
+    call_kwargs = mock_s3_client.client.put_object.call_args[1]
+    stored = json.loads(call_kwargs["Body"])
+    code = list(stored.keys())[0]
+    assert "expires_at" in stored[code]
+
+
+def test_generate_code_omits_expires_at_when_no_hours(provider, mock_s3_client):
+    mock_s3_client.client.get_object.side_effect = _client_error("NoSuchKey")
+
+    provider.generate_code("alice/docs/", expires_hours=None)
+
+    call_kwargs = mock_s3_client.client.put_object.call_args[1]
+    stored = json.loads(call_kwargs["Body"])
+    code = list(stored.keys())[0]
+    assert "expires_at" not in stored[code]
+
+
+def test_resolve_code_returns_none_for_expired_code(provider, mock_s3_client):
+    past = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
+    data = {"ABC123": {"path": "alice/docs/", "created_at": "2024-01-01", "expires_at": past}}
+    body = MagicMock()
+    body.read.return_value = json.dumps(data).encode()
+    mock_s3_client.client.get_object.return_value = {"Body": body}
+
+    assert provider.resolve_code("ABC123") is None
+
+
+def test_resolve_code_returns_path_for_non_expired_code(provider, mock_s3_client):
+    future = (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
+    data = {"ABC123": {"path": "alice/docs/", "created_at": "2024-01-01", "expires_at": future}}
+    body = MagicMock()
+    body.read.return_value = json.dumps(data).encode()
+    mock_s3_client.client.get_object.return_value = {"Body": body}
+
+    assert provider.resolve_code("ABC123") == "alice/docs/"
+
+
+def test_resolve_code_returns_path_when_no_expiry(provider, mock_s3_client):
+    data = {"ABC123": {"path": "alice/docs/", "created_at": "2024-01-01"}}
+    body = MagicMock()
+    body.read.return_value = json.dumps(data).encode()
+    mock_s3_client.client.get_object.return_value = {"Body": body}
+
+    assert provider.resolve_code("ABC123") == "alice/docs/"
+
+
+# ---------------------------------------------------------------------------
+# Revoke UI
+# ---------------------------------------------------------------------------
+
+def test_share_flow_revoke_valid_code(mock_s3_client, capsys):
+    from ui.share import share_flow
+
+    mock_provider = MagicMock()
+    mock_provider.resolve_code.return_value = "alice/docs/"
+
+    with patch("ui.share.Prompt.ask", side_effect=["revoke", "ABC123"]):
+        share_flow(mock_s3_client, "alice", mock_provider)
+
+    mock_provider.revoke_code.assert_called_once_with("ABC123")
+    assert "revoked" in capsys.readouterr().out.lower()
+
+
+def test_share_flow_revoke_unknown_code(mock_s3_client, capsys):
+    from ui.share import share_flow
+
+    mock_provider = MagicMock()
+    mock_provider.resolve_code.return_value = None
+
+    with patch("ui.share.Prompt.ask", side_effect=["revoke", "XXXXXX"]):
+        share_flow(mock_s3_client, "alice", mock_provider)
+
+    mock_provider.revoke_code.assert_not_called()
+    assert "not found" in capsys.readouterr().out.lower()

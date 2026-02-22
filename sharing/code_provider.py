@@ -10,8 +10,11 @@ class CodeProvider(ABC):
     """
 
     @abstractmethod
-    def generate_code(self, path: str) -> str:
-        """Persist a code → S3 path mapping and return the generated code."""
+    def generate_code(self, path: str, expires_hours: int | None = None) -> str:
+        """
+        Persist a code → S3 path mapping and return the generated code.
+        If expires_hours is set, the code becomes invalid after that many hours.
+        """
         ...
 
     @abstractmethod

@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 
 import config as config_module
-from config import load_config, save_config
+from config import load_config, save_config, validate_config
 
 
 def test_load_config_returns_none_when_file_missing(tmp_path):
@@ -45,6 +45,43 @@ def test_load_config_returns_none_on_malformed_json(tmp_path):
     with patch.object(config_module, "CONFIG_FILE", config_file):
         result = load_config()
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# validate_config
+# ---------------------------------------------------------------------------
+
+_VALID = {
+    "aws_access_key": "AKIATEST",
+    "aws_secret_key": "secret",
+    "aws_region": "us-east-1",
+    "bucket_name": "my-bucket",
+}
+
+
+def test_validate_config_passes_for_complete_config():
+    assert validate_config(_VALID) is True
+
+
+def test_validate_config_fails_when_key_missing():
+    for key in _VALID:
+        partial = {k: v for k, v in _VALID.items() if k != key}
+        assert validate_config(partial) is False, f"Should fail when '{key}' is missing"
+
+
+def test_validate_config_fails_when_value_is_empty_string():
+    config = {**_VALID, "aws_access_key": ""}
+    assert validate_config(config) is False
+
+
+def test_validate_config_fails_when_value_is_whitespace():
+    config = {**_VALID, "bucket_name": "   "}
+    assert validate_config(config) is False
+
+
+def test_validate_config_fails_for_non_dict():
+    assert validate_config(None) is False
+    assert validate_config("not a dict") is False
 
 
 def test_saved_config_is_valid_json(tmp_path):
